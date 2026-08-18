@@ -5,16 +5,30 @@ are in [`chain-params.md`](./chain-params.md).
 
 ## 1. Node software
 
-**Node binaries and container images are not yet publicly downloadable.** The
-public release channel opens with the Sovren Exchange Integration Kit general
-availability; when it does, this section will carry the release download
-references and the container **image digest** so operators can pin exactly
-what Sovren runs. Until then, integrators and node operators should request
-node software through the Sovren support channel
-(support@sovrentech.io · [Discord support channel](https://discord.com/channels/1496907756718915645/1496907758283526168)).
+Node software is published on this repository's
+[releases page](https://github.com/sovrn-tech/sovr-networks/releases). The current mainnet release
+is [v0.23.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.23.0):
 
-Do not run binaries or images obtained from any other source claiming to be
-Sovren node software.
+| Artifact | Notes |
+|---|---|
+| `sovrd-v0.23.0-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
+| `libwasmvm.x86_64.so` | **Required** — `sovrd` links against it; install on the library path |
+| `checksums.txt` | SHA-256 of both; verify before running |
+
+Container image (the **same build** — the release binary was extracted from this image, not
+rebuilt):
+
+```
+ghcr.io/sovrn-tech/sovrd:v0.23.0
+digest: sha256:2d2fbb8f48986b5ced9ca01ad515b41e5c34844ef43ba77ceb252ab938ecb396
+```
+
+**Pin the digest, not the tag** — it is the exact image every Sovren mainnet node runs, so what you
+execute is byte-identical to what the network validates with.
+
+Do not run binaries or images obtained from any other source claiming to be Sovren node software —
+this repository's releases page and the `ghcr.io/sovrn-tech` registry are the only official
+channels.
 
 ## 2. Initialize the node home
 

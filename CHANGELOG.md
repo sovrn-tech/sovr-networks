@@ -4,11 +4,15 @@ All notable changes to the published network metadata in this repository are
 recorded here. Dates are UTC. This repository is updated on every chain release,
 on IBC route establishment, and on any change to a published value.
 
-## 2026-08-18 — Brand assets
+## 2026-08-18 — Brand assets · chain-registry submission
 
 - Added the SOVR mark under `images/` (`sovr-256.png` 256×256, `sovr.png` 512×512 — both square,
-  under the chain-registry 250 KB logo limit), for reference by the Cosmos chain-registry and
-  Osmosis assetlist submissions.
+  under the chain-registry 250 KB logo limit, transparent and safe inside a circular mask), for
+  reference by the Cosmos chain-registry and Osmosis assetlist submissions.
+- Submitted chain-registry records for `sovr` (mainnet) and the `osmosis-sovr` IBC route.
+- Published the node software release [v0.23.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.23.0)
+  (`sovrd` linux/amd64 + `libwasmvm.x86_64.so` + checksums) and the container image
+  `ghcr.io/sovrn-tech/sovrd:v0.23.0` — both extracted from the exact digest the mainnet fleet runs.
 
 ## 2026-08-17 — Initial public release
 

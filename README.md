@@ -88,11 +88,12 @@ canonical SOVR**, on Osmosis or any other chain, whatever a UI labels it.
 
 ## Chain registry
 
-Sovren's chain-registry records (mainnet chain name `sovr`, testnet
-`sovrtestnet`) are prepared from the same source data as this repository and
-will be submitted to the [Cosmos chain registry](https://github.com/cosmos/chain-registry);
-once merged they are kept value-identical with it. The prepared records
-reference this repository as their codebase/genesis surface.
+Sovren's chain-registry records (mainnet chain name `sovr`, testnet `sovrtestnet`) are
+prepared from the same source data as this repository and have been submitted to the
+[Cosmos chain registry](https://github.com/cosmos/chain-registry). Once merged they are
+kept value-identical with it. The prepared records reference this repository as their
+codebase/genesis surface, and the canonical `sovr-1` ↔ `osmosis-1` IBC route recorded in
+[`mainnet/ibc.md`](./mainnet/ibc.md) as their `_IBC` entry.
 
 **A note on the genesis files**: the `gentx` memos inside each `genesis.json`
 record ceremony-time peer addresses and validator node IDs from the genesis
@@ -139,10 +140,12 @@ For the testnet, substitute `cd testnet` and `https://rpc.testnet.sovrchain.net`
 
 ## Node software
 
-Node binaries and container images are **not yet publicly downloadable**. When
-they are published, `mainnet/joining.md` and `testnet/joining.md` will carry the
-release references and the container image digest to pin against — until then,
-genesis-based sync from source is the only path (see `joining.md`).
+Node binaries and container images are published on this repository's
+[releases page](https://github.com/sovrn-tech/sovr-networks/releases) and at
+`ghcr.io/sovrn-tech/sovrd`. `mainnet/joining.md` carries the current release
+references and the container image digest to pin against. Artifacts are
+extracted from the exact image digest the mainnet fleet runs, so provenance is
+independently verifiable (instructions in the release notes).
 
 ## Update cadence
 
