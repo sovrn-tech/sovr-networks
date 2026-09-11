@@ -4,6 +4,16 @@ All notable changes to the published network metadata in this repository are
 recorded here. Dates are UTC. This repository is updated on every chain release,
 on IBC route establishment, and on any change to a published value.
 
+## 2026-09-08 — Node software release v0.24.0 (reserve-reallocation upgrade)
+
+- Published the node software release [v0.24.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.24.0)
+  (`sovrd` linux/amd64 + `libwasmvm.x86_64.so` + checksums) and the container image
+  `ghcr.io/sovrn-tech/sovrd:v0.24.0` (`sha256:d909fa6cd56648670b48ee3263b40bd248f1aa4dcf4f353a7d2188e42ad00615`)
+  — both extracted from the exact digest the mainnet fleet runs. Carries the on-chain
+  `v0.24.0-reserve-reallocation` upgrade. sovrd sha256
+  `6b6077ce43e5e284123950d9c1419ddcaf2d3b183ab51818c445f857be5a0b94`, libwasmvm sha256
+  `1da45df75aa3e97f0635e3b4c9236d551fbf7b696af321462e43fa05726cffe9`.
+
 ## 2026-08-18 — Brand assets · chain-registry submission
 
 - Added the SOVR mark under `images/` (`sovr-256.png` 256×256, `sovr.png` 512×512 — both square,

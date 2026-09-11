@@ -7,11 +7,11 @@ are in [`chain-params.md`](./chain-params.md).
 
 Node software is published on this repository's
 [releases page](https://github.com/sovrn-tech/sovr-networks/releases). The current mainnet release
-is [v0.23.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.23.0):
+is [v0.24.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.24.0):
 
 | Artifact | Notes |
 |---|---|
-| `sovrd-v0.23.0-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
+| `sovrd-v0.24.0-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
 | `libwasmvm.x86_64.so` | **Required** — `sovrd` links against it; install on the library path |
 | `checksums.txt` | SHA-256 of both; verify before running |
 
@@ -19,8 +19,8 @@ Container image (the **same build** — the release binary was extracted from th
 rebuilt):
 
 ```
-ghcr.io/sovrn-tech/sovrd:v0.23.0
-digest: sha256:2d2fbb8f48986b5ced9ca01ad515b41e5c34844ef43ba77ceb252ab938ecb396
+ghcr.io/sovrn-tech/sovrd:v0.24.0
+digest: sha256:d909fa6cd56648670b48ee3263b40bd248f1aa4dcf4f353a7d2188e42ad00615
 ```
 
 **Pin the digest, not the tag** — it is the exact image every Sovren mainnet node runs, so what you
@@ -104,4 +104,4 @@ https://sovrscan.com/node-health.
 ---
 
 *Source note: peers, endpoints, and checksums verified by the Sovren team
-against the live network and the v0.23.0 release manifest, 2026-08-10.*
+against the live network and the v0.24.0 release manifest, 2026-09-08.*
