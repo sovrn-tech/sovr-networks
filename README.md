@@ -6,7 +6,7 @@ smart contracts). SOVR is the sole unit of account of the Sovren Layer 1:
 staking, governance, gas, and service payments. The base denomination is
 `usovr` (1 SOVR = 1,000,000 usovr).
 
-*Last verified against the live networks: 2026-09-08 (release v0.24.0).*
+*Last verified against the live networks: 2026-09-16 (release v0.27.1).*
 
 ## At a glance
 
