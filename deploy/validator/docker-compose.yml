@@ -1,0 +1,96 @@
+# Sovren Mainnet (`sovr-1`) validator — docker-compose, PUBLIC artifacts only.
+#
+# This runs a sovr-1 node from the PUBLIC image + PUBLIC genesis. It does NOT
+# build from source and needs no internal release bundle — everything is
+# sourced from ghcr.io/sovrn-tech and the public sovr-networks repo. See
+# README.md for the full walkthrough (keys, funding, create-validator, sentries).
+#
+# ⚠️  A validator signs consensus. Read the SAFETY section of README.md first:
+#     - ONE unique priv_validator_key per validator. Never run the same key on
+#       two nodes — double-signing is slashed 5% and tombstoned (permanent).
+#     - Back up config/priv_validator_key.json the moment it is generated.
+#
+# Fill in ./.env (copy from .env.example), stage ./release/, then:
+#     docker compose up -d
+services:
+  sovr-validator:
+    # PUBLIC image, pinned by digest for reproducibility (see README "Get the
+    # artifacts" — verify the digest against the official sovr-networks release).
+    image: ${SOVR_NODE_IMAGE:?set SOVR_NODE_IMAGE (e.g. ghcr.io/sovrn-tech/sovrd:v0.27.1@sha256:...)}
+    container_name: sovr-validator
+    restart: unless-stopped
+    stop_grace_period: 60s
+    environment:
+      DEPLOYMENT_ENVIRONMENT: mainnet
+      CHAIN_ID: ${CHAIN_ID:?set CHAIN_ID (sovr-1)}
+      MONIKER: ${MONIKER:?set MONIKER (your validator's public name)}
+      MINIMUM_GAS_PRICES: ${MINIMUM_GAS_PRICES:-0.001usovr}
+
+      # SIGNER_MODE is a required, explicit acknowledgement on mainnet that this
+      # node holds a signing key. It is a flag/log only — the node signs iff its
+      # consensus key is in the active validator set; it does NOT create-validator.
+      # Use "file" for the built-in local file signer (this compose). A remote
+      # signer (tmkms/HSM) is the hardened alternative — see README "Key custody".
+      SIGNER_MODE: ${SIGNER_MODE:-file}
+      KEYRING_BACKEND: ${KEYRING_BACKEND:-file}
+
+      # Peering. SEEDS come from sovr-networks/mainnet/joining.md. EXTERNAL_ADDRESS
+      # is OPTIONAL — it only advertises how peers dial YOU. A NAT'd, outbound-only
+      # validator (no inbound 26656) signs and earns fine; leave it blank in that
+      # case. Set it only if you want inbound peers (your public IP/DNS or LB).
+      SEEDS: ${SEEDS:?set SEEDS from mainnet/joining.md}
+      PERSISTENT_PEERS: ${PERSISTENT_PEERS:-}
+      EXTERNAL_ADDRESS: ${EXTERNAL_ADDRESS:-}
+
+      # Integrity gates (mainnet-required). Both come from the official release:
+      #   GENESIS_SHA256 — sha256 of the published genesis.json (mainnet/genesis.sha256)
+      #   BINARY_SHA256  — sha256 of sovrd in the image (the Release's checksums.txt)
+      GENESIS_SHA256: ${GENESIS_SHA256:?set GENESIS_SHA256 from the official release}
+      BINARY_SHA256: ${BINARY_SHA256:?set BINARY_SHA256 from the official release}
+      GENESIS_FILE_PATH: /home/sovr/.sovr/config/genesis.json
+      RELEASE_BUNDLE_DIR: /etc/sovr/release
+
+      # Go heap soft cap. MUST fit your box's RAM (~75% of it) or Go grows past RAM
+      # and the kernel OOM-kills sovrd → jail + slash on mainnet's tight downtime
+      # window. REQUIRED (no default) so a box is never silently over-committed:
+      # configure.sh sizes it from detected RAM, or set it per the .env.example
+      # table. Keep MEMORY_LIMIT (below) a little above it and ≤ your RAM.
+      GOMEMLIMIT: ${GOMEMLIMIT:?set GOMEMLIMIT — run ./configure.sh (auto-sizes from RAM) or set it per the .env.example table}
+      GOGC: ${GOGC:-100}
+
+      # Snapshot restore (bootstrap). REQUIRED to join sovr-1 — a fresh node
+      # cannot sync from genesis with a single modern binary (see README §5).
+      # Inert unless SNAPSHOT_RESTORE=true. On a fresh (empty) home the node
+      # resolves latest.json, cosign-verifies it, cross-checks the block_hash
+      # against SNAPSHOT_ANCHORS, then downloads + extracts the archive.
+      SNAPSHOT_RESTORE: ${SNAPSHOT_RESTORE:-false}
+      SNAPSHOT_BASEURL: ${SNAPSHOT_BASEURL:-}
+      SNAPSHOT_NETWORK: ${SNAPSHOT_NETWORK:-mainnet}
+      # cosign public key — full PEM or the bare single-line base64 body.
+      SNAPSHOT_COSIGN_PUBKEY: ${SNAPSHOT_COSIGN_PUBKEY:-}
+      # TWO distinct RPC anchors (comma-separated). Fails closed on the gateway
+      # listed twice; see README §5 for the current single-public-RPC caveat.
+      SNAPSHOT_ANCHORS: ${SNAPSHOT_ANCHORS:-}
+    ports:
+      # P2P. Inbound is OPTIONAL — publishing 26656 lets peers dial you, but an
+      # outbound-only validator behind NAT works without it. To NOT accept inbound,
+      # set P2P_PORT_PUBLISH=127.0.0.1:26656:26656 (binds loopback; outbound still
+      # works). Default publishes on all interfaces for operators who want inbound.
+      - "${P2P_PORT_PUBLISH:-26656:26656}"
+      # RPC / REST / gRPC — bound to localhost only. Do NOT expose a validator's
+      # RPC publicly; put a separate fullnode/sentry in front for queries.
+      - "127.0.0.1:26657:26657"
+      - "127.0.0.1:1317:1317"
+      - "127.0.0.1:9090:9090"
+    volumes:
+      # Persistent node home. priv_validator_key.json lives here after first
+      # init — BACK IT UP (README "Generate & back up your key").
+      - ${HOST_SOVR_HOME:?set HOST_SOVR_HOME (host dir for the node home)}:/home/sovr/.sovr
+      # Release dir assembled from PUBLIC artifacts (at minimum genesis.json).
+      - ./release:/etc/sovr/release:ro
+    command: ["start"]
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-8g}
+          cpus: "${CPU_LIMIT:-4}"
