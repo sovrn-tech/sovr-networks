@@ -1,0 +1,54 @@
+#!/sbin/openrc-run
+# shellcheck shell=sh
+# shellcheck disable=SC2034  # name/description/command/*_log are read by openrc-run, not this file
+# shellcheck disable=SC1091  # /etc/conf.d/sovrd is a host file, absent at lint time
+# ============================================================
+# Sovren node — OpenRC service (Alpine Linux)
+#
+# Runs the same supervisor the container image uses
+# (docker/entrypoint.sh), so the environment-variable interface in
+# /etc/conf.d/sovrd is identical to a container deployment. OpenRC
+# sources /etc/conf.d/sovrd before the command runs.
+#
+# Install: alpine/install.sh copies this to /etc/init.d/sovrd.
+# Docs:    mainnet-runbook/alpine-node-setup.md
+# ============================================================
+
+name="sovrd"
+description="Sovren full node / validator (SOVR chain)"
+
+# Pull /etc/conf.d/sovrd into the environment explicitly. openrc-run sources
+# it, but the assignments are not guaranteed to be exported, and the
+# supervised process (entrypoint.sh) reads them from the environment. `set -a`
+# makes every assignment exported.
+if [ -f /etc/conf.d/sovrd ]; then
+	set -a
+	. /etc/conf.d/sovrd
+	set +a
+fi
+
+# The entrypoint re-derives SOVR_HOME from /etc/conf.d/sovrd; the default
+# matches the container image and the install layout.
+: "${SOVR_HOME:=/home/sovr/.sovr}"
+export SOVR_HOME
+
+command="/usr/local/bin/entrypoint.sh"
+command_args="start"
+command_user="sovr:sovr"
+directory="/home/sovr"
+
+# supervise-daemon (OpenRC's built-in supervisor) restarts the node on exit
+# and redirects its output. respawn_max=0 means unlimited: the entrypoint is
+# idempotent, and a validator must come back after a transient crash.
+supervisor="supervise-daemon"
+respawn_delay=5
+respawn_max=0
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.log"
+
+depend() {
+	use net
+	use logger dns
+	after firewall
+}
