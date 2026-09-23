@@ -163,6 +163,18 @@ else
 	warn "  MEMORY_LIMIT=1600m. RAISE both per the .env.example table for your box."
 fi
 
+# --- 5c. cap CPU_LIMIT to this box's core count -----------------------------
+# The compose sets a `cpus:` ceiling; Docker refuses to start if it exceeds the
+# cores actually available (e.g. CPU_LIMIT=4 on a 2-core VM). Size it to nproc.
+cores=$(nproc 2>/dev/null || echo 0)
+if [ "${cores:-0}" -gt 0 ]; then
+	set_kv CPU_LIMIT "$cores"
+	echo "  CPU_LIMIT=$cores (this box's core count)"
+else
+	set_kv CPU_LIMIT "2"
+	warn "  couldn't detect CPU count — set CPU_LIMIT=2; raise it to your core count."
+fi
+
 # --- 6. data dir ownership (container runs as uid 1000) ---------------------
 say ""
 home_dir="$(get_kv HOST_SOVR_HOME)"; home_dir="${home_dir:-./data}"

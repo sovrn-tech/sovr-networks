@@ -93,4 +93,4 @@ services:
       resources:
         limits:
           memory: ${MEMORY_LIMIT:-8g}
-          cpus: "${CPU_LIMIT:-4}"
+          cpus: "${CPU_LIMIT:-2}"
