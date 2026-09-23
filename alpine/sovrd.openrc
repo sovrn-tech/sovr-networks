@@ -1,14 +1,14 @@
 #!/sbin/openrc-run
 # shellcheck shell=sh
-# shellcheck disable=SC2034  # name/description/command/*_log are read by openrc-run, not this file
+# shellcheck disable=SC2034  # name/description/command/*_log are read by openrc-run
 # shellcheck disable=SC1091  # /etc/conf.d/sovrd is a host file, absent at lint time
 # ============================================================
-# Sovren node — OpenRC service (Alpine Linux)
+# Sovren node — OpenRC service (Alpine Linux), plain-config model.
 #
-# Runs the same supervisor the container image uses
-# (docker/entrypoint.sh), so the environment-variable interface in
-# /etc/conf.d/sovrd is identical to a container deployment. OpenRC
-# sources /etc/conf.d/sovrd before the command runs.
+# Runs `sovrd start` directly (no container supervisor). On a fresh data dir it
+# first restores the published archive snapshot with restore-snapshot.sh
+# (idempotent: a no-op once data/ exists), then starts the node. Pointers are in
+# /etc/conf.d/sovrd; the node's own config is config.toml / app.toml.
 #
 # Install: alpine/install.sh copies this to /etc/init.d/sovrd.
 # Docs:    mainnet-runbook/alpine-node-setup.md
@@ -17,29 +17,23 @@
 name="sovrd"
 description="Sovren full node / validator (SOVR chain)"
 
-# Pull /etc/conf.d/sovrd into the environment explicitly. openrc-run sources
-# it, but the assignments are not guaranteed to be exported, and the
-# supervised process (entrypoint.sh) reads them from the environment. `set -a`
-# makes every assignment exported.
+# Pull /etc/conf.d/sovrd into the environment (exported) for this service and
+# the restore helper.
 if [ -f /etc/conf.d/sovrd ]; then
 	set -a
+	# shellcheck disable=SC1091
 	. /etc/conf.d/sovrd
 	set +a
 fi
 
-# The entrypoint re-derives SOVR_HOME from /etc/conf.d/sovrd; the default
-# matches the container image and the install layout.
 : "${SOVR_HOME:=/home/sovr/.sovr}"
 export SOVR_HOME
 
-command="/usr/local/bin/entrypoint.sh"
-command_args="start"
+command="/usr/local/bin/sovrd"
+command_args="start --home ${SOVR_HOME}"
 command_user="sovr:sovr"
 directory="/home/sovr"
 
-# supervise-daemon (OpenRC's built-in supervisor) restarts the node on exit
-# and redirects its output. respawn_max=0 means unlimited: the entrypoint is
-# idempotent, and a validator must come back after a transient crash.
 supervisor="supervise-daemon"
 respawn_delay=5
 respawn_max=0
@@ -51,4 +45,36 @@ depend() {
 	use net
 	use logger dns
 	after firewall
+}
+
+start_pre() {
+	# One-time snapshot bootstrap, as the node user (so data/ stays sovr-owned).
+	# restore-snapshot.sh is idempotent — a no-op once data/ exists — and
+	# fail-closed: if it cannot authenticate/verify the snapshot it exits
+	# non-zero and the service refuses to start.
+	if [ -x /usr/local/bin/restore-snapshot.sh ] && [ "${SNAPSHOT_RESTORE:-false}" != "false" ]; then
+		ebegin "restoring archive snapshot (if needed)"
+		# Values reach restore-snapshot.sh through env(1) argv — never
+		# interpolated into a `sh -c` string. A quote in a conf.d value (they
+		# come from install.sh flags) would otherwise break out and run
+		# arbitrary shell as the service user, which owns the validator key.
+		# shellcheck disable=SC2016  # $0/$@ are expanded by the inner sh, by design
+		if su -s /bin/sh -c 'exec "$0" "$@"' -- sovr env \
+			"SOVR_HOME=${SOVR_HOME:-}" \
+			"CHAIN_ID=${CHAIN_ID:-}" \
+			"DEPLOYMENT_ENVIRONMENT=${DEPLOYMENT_ENVIRONMENT:-}" \
+			"SNAPSHOT_RESTORE=${SNAPSHOT_RESTORE:-false}" \
+			"SNAPSHOT_BASEURL=${SNAPSHOT_BASEURL:-}" \
+			"SNAPSHOT_NETWORK=${SNAPSHOT_NETWORK:-}" \
+			"SNAPSHOT_COSIGN_PUBKEY=${SNAPSHOT_COSIGN_PUBKEY:-}" \
+			"SNAPSHOT_ANCHORS=${SNAPSHOT_ANCHORS:-}" \
+			"SNAPSHOT_COSIGN_VERSION=${SNAPSHOT_COSIGN_VERSION:-}" \
+			/usr/local/bin/restore-snapshot.sh; then
+			eend 0
+		else
+			eend 1 "snapshot restore failed"
+			return 1
+		fi
+	fi
+	return 0
 }

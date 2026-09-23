@@ -1,79 +1,28 @@
-# /etc/conf.d/sovrd — Sovren node configuration (Alpine / OpenRC).
+# /etc/conf.d/sovrd — Sovren node service config (Alpine / OpenRC, plain-config).
 #
-# Read by /etc/init.d/sovrd on every start, then consumed by the same
-# entrypoint supervisor the container image uses (docker/entrypoint.sh).
-# The variable names are the container's — see the header of
-# docker/entrypoint.sh for the full optional set, and
-# mainnet-runbook/alpine-node-setup.md for the operator procedure.
+# Read by /etc/init.d/sovrd. It configures the OpenRC service and the one-time
+# snapshot bootstrap; the node's OWN config is config.toml / app.toml under
+# $SOVR_HOME (edit those for peering, listeners, pruning, etc.).
 #
 # Edit, then: rc-service sovrd restart
 #
-# NOTE: sovrd.openrc sources this file *as root* before dropping to the service
-# user, so every value must be single-quoted (as below). An unquoted value with
-# spaces or shell syntax would be re-parsed there. `alpine/install.sh` writes
-# the generated file that way for you.
-#
-# Values containing "replace", "required", "todo" or "placeholder" are
-# treated as unset and rejected on mainnet (fail-closed).
+# Values are single-quoted because the service sources this file as root.
+# "replace"/"required"/"todo"/"placeholder" are treated as unset on mainnet.
 
-# --- required --------------------------------------------------------------
+# --- node home -------------------------------------------------------------
 SOVR_HOME='/home/sovr/.sovr'
-DEPLOYMENT_ENVIRONMENT='mainnet'
 CHAIN_ID='sovr-1'
-KEYRING_BACKEND='file'
-# Node role marker; required on mainnet. "disabled" is correct for both a
-# full node and a validator (consensus signing uses priv_validator_key.json).
-SIGNER_MODE='disabled'
-RELEASE_BUNDLE_DIR='/etc/sovr/release'
-# The native install runs the static musl binary and verifies it against the
-# matching checksums.txt entry (the glibc "sovrd" entry is a different file).
-SOVRD_BINARY_PATH='/usr/local/bin/sovrd-linux-amd64-musl'
+DEPLOYMENT_ENVIRONMENT='mainnet'
 
-# Public P2P address other nodes dial: tcp://<public-ip>:26656
-EXTERNAL_ADDRESS='tcp://REPLACE_WITH_PUBLIC_IP:26656'
-
-# --- peers -----------------------------------------------------------------
-# If both are empty, the bundle's seeds.txt is used (canonical seeds).
-SEEDS=''
-PERSISTENT_PEERS=''
-
-# --- snapshot bootstrap (fresh node) ---------------------------------------
-# From-genesis sync is NOT viable on sovr-1; a fresh node restores a signed
-# archive snapshot first, then blocksyncs the gap to head. No-op once data/
-# exists. install.sh fills these in for --environment mainnet; the two anchors
-# must be DISTINCT (fail-closed otherwise). See mainnet-runbook/alpine-node-setup.md.
-# SNAPSHOT_RESTORE='true'
-# SNAPSHOT_BASEURL='https://svrn-chain-snapshots-mainnet.nyc3.digitaloceanspaces.com/snapshots'
-# SNAPSHOT_NETWORK='mainnet'
-# SNAPSHOT_COSIGN_PUBKEY='<official mainnet cosign public key>'
-# SNAPSHOT_ANCHORS='https://rpc.sovrchain.net,https://rpc2.sovrchain.net'
-
-# --- full node vs validator / sentry topology (sentry-topology.md) ---------
-# Full node: leave PEX empty (upstream default true) or set PEX='true'.
-# Validator: PEX='false', PRIVATE_PEER_IDS + UNCONDITIONAL_PEER_IDS set to its
-# sentry node IDs, and PERSISTENT_PEERS pointing ONLY at those sentries.
-#   Standalone validator (no own sentries): leave PEX='false' and set
-#   PERSISTENT_PEERS to the public persistent peers from
-#   sovr-networks/mainnet/joining.md so it always has peers to gossip with.
-PEX=''
-ADDR_BOOK_STRICT=''
-PRIVATE_PEER_IDS=''
-UNCONDITIONAL_PEER_IDS=''
-
-# --- listeners -------------------------------------------------------------
-# A public full node may expose RPC; a validator must NOT (keep RPC bound to
-# localhost / private interfaces — see infrastructure-and-ops.md §10).
-API_ENABLE='true'
-PROMETHEUS_ENABLE='true'
-# CORS_ORIGINS='["https://sovrscan.com","https://api.sovrchain.net"]'
-# RPC_LISTEN_ADDR='tcp://127.0.0.1:26657'
-# API_LISTEN_ADDR='tcp://127.0.0.1:1317'
-# GRPC_LISTEN_ADDR='127.0.0.1:9090'
-
-# --- optional resource / pruning knobs (docker/entrypoint.sh header) -------
-# PRUNING='default'
-# MIN_RETAIN_BLOCKS=''
-# TX_INDEX='kv'
-# MEMPOOL_TYPE='flood'
-# RPC_MAX_OPEN_CONNECTIONS=''
-# WASM_MEMORY_CACHE_SIZE=''
+# --- snapshot bootstrap (fresh node; no-op once data/ exists) --------------
+# From-genesis sync is NOT viable on sovr-1, so a fresh node restores a signed
+# archive snapshot first, then blocksyncs the gap to head. The two anchors must
+# be DISTINCT (the restore cross-checks the signed block_hash against both and
+# fails closed). `alpine/install.sh` fills these in for --environment mainnet.
+SNAPSHOT_RESTORE='true'
+SNAPSHOT_BASEURL='https://svrn-chain-snapshots-mainnet.nyc3.digitaloceanspaces.com/snapshots'
+SNAPSHOT_NETWORK='mainnet'
+SNAPSHOT_COSIGN_PUBKEY='MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEv6XtLWy4H3IhmiLMUXEbRCeWswmXS8Y3xuNHo96Bwt2TbZSnwxnn4sHbl1/2cTH+b85pb/zGRIfURBad2ZOpfA=='
+SNAPSHOT_ANCHORS='https://rpc.sovrchain.net,https://rpc2.sovrchain.net'
+# cosign release tag fetched by restore-snapshot.sh if cosign isn't installed.
+SNAPSHOT_COSIGN_VERSION='v2.4.1'

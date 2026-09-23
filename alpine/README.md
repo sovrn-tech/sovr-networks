@@ -1,14 +1,21 @@
 # SOVR on Alpine Linux
 
-Native (non-container) deployment profile for SOVR nodes on Alpine. It runs
-the **static musl** `sovrd` (built by `Dockerfile.alpine` /
-`scripts/build-release-bundle.sh --static-musl`) under **OpenRC**, reusing
-the container image's supervisor (`entrypoint.sh`) so the configuration
-interface is byte-for-byte the same as a container deployment: every
-`/etc/conf.d/sovrd` variable is a `docker/entrypoint.sh` variable.
+Native (non-container) deployment profile for SOVR nodes on Alpine. It installs
+the **static-musl** `sovrd` from the public `sovrn-tech/sovr-networks` release,
+configures `config.toml` / `app.toml` directly, and runs it under **OpenRC** —
+no container, no supervisor. On a fresh data dir it first restores the published
+archive snapshot with `restore-snapshot.sh` (from-genesis sync is not viable on
+`sovr-1`), then starts the node.
 
 Full procedure, validator specifics, and troubleshooting:
 **[`mainnet-runbook/alpine-node-setup.md`](../mainnet-runbook/alpine-node-setup.md)**.
+
+> **Two methods, coexisting.** The container method — `deploy/validator/`
+> (docker-compose) and the `ghcr.io/sovrn-tech/sovrd` image, supervised by
+> `docker/entrypoint.sh` — is **unchanged and remains the fleet default**. This
+> native Alpine profile is an independent second method for hosts that don't run
+> containers. They do not share a node home: use one or the other for a given
+> data directory.
 
 ## Roles
 
@@ -21,27 +28,19 @@ Full procedure, validator specifics, and troubleshooting:
 ## Quickstart
 
 ```sh
-# 0. Get the installer from the tagged repo checkout (it verifies the tarball,
-#    so it is not shipped inside it).
-git clone --branch vX.Y.Z https://github.com/parler-tech/sbn && cd sbn
+# 0. The installer ships with the network metadata (it is what fetches +
+#    verifies the release assets), so grab it from sovr-networks.
+git clone https://github.com/sovrn-tech/sovr-networks && cd sovr-networks
 
-# 1. Get a release bundle and extract it. The bundle must contain
-#    sovrd-linux-amd64-musl (build with `scripts/build-release-bundle.sh
-#    --static-musl`, or download a published release tarball), plus
-#    checksums.txt and its checksums.txt.asc signature.
-tar -xzf ../release-bundle-vX.Y.Z.tar.gz
-
-# 2. Install (as root). On mainnet --release-pubkey (the out-of-band
-#    release-captain public key) is required so the checksum manifest is
-#    authenticated, not just internally consistent. Idempotent: re-run with
-#    a newer bundle to upgrade; node data and /etc/conf.d/sovrd are untouched.
-alpine/install.sh \
-  --bundle ./vX.Y.Z \
-  --role fullnode \
-  --release-pubkey ./release-captain.asc \
+# 1. Install (as root). --version selects the node release; the installer
+#    fetches sovrd-<version>-linux-amd64-musl, restore-snapshot.sh and
+#    checksums.txt from that release, plus the canonical mainnet genesis, and
+#    verifies both. Idempotent: re-run with a newer --version to upgrade; node
+#    data and /etc/conf.d/sovrd are untouched.
+alpine/install.sh --version v0.27.1 --role fullnode \
   --external-address "tcp://203.0.113.10:26656"
 
-# 3. Confirm /etc/conf.d/sovrd, then start.
+# 2. Review /etc/conf.d/sovrd and ~/.sovr/config, then start.
 rc-service sovrd start
 tail -f /var/log/sovrd.log
 ```
@@ -49,66 +48,65 @@ tail -f /var/log/sovrd.log
 Public RPC node:
 
 ```sh
-alpine/install.sh --bundle ./vX.Y.Z --role rpc \
-  --release-pubkey ./release-captain.asc \
+alpine/install.sh --version v0.27.1 --role rpc \
   --external-address "tcp://203.0.113.10:26656" \
   --cors-origins '["https://sovrscan.com","https://api.sovrchain.net"]' \
   --start
 ```
 
-Validator (install, sync, then bond — do **not** start it as a validator
-until it is caught up and wired to its sentries):
+Validator (install, sync, then bond — do **not** bond until it is caught up and
+wired to its sentries):
 
 ```sh
-alpine/install.sh --bundle ./vX.Y.Z --role validator \
-  --release-pubkey ./release-captain.asc \
-  --external-address "tcp://<validator-ip>:26656"
-# On mainnet the installer also fills in the signed-snapshot bootstrap
-# (SNAPSHOT_RESTORE/BASEURL/COSIGN_PUBKEY/ANCHORS) — a fresh sovr-1 node MUST
-# restore a snapshot; from-genesis sync is not viable.
-#
-# Peering, pick one in /etc/conf.d/sovrd:
-#   - sentry topology: PERSISTENT_PEERS/PRIVATE_PEER_IDS/UNCONDITIONAL_PEER_IDS
-#     -> your two sentry node IDs (sentry-topology.md);
-#   - standalone (no own sentries): PERSISTENT_PEERS -> the public persistent
-#     peers from sovr-networks/mainnet/joining.md.
+alpine/install.sh --version v0.27.1 --role validator \
+  --external-address "tcp://<validator-ip>:26656" \
+  --persistent-peers  "<sentry1-nodeid>@<sentry1>:26656,<sentry2-nodeid>@<sentry2>:26656" \
+  --private-peer-ids  "<sentry1-nodeid>,<sentry2-nodeid>" \
+  --unconditional-peer-ids "<sentry1-nodeid>,<sentry2-nodeid>"
 rc-service sovrd start
 ```
 
-`--release-pubkey` also accepts an `https://` URL (the public key is published
-as a public artifact), so a from-scratch install needs no out-of-band file.
-Prefer a key origin **different** from the bundle's host — otherwise a single
-compromised origin could serve both the key and the payload it authenticates.
+`--role validator` sets `pex = false` and binds RPC/API to loopback. On mainnet
+the installer also fills in the signed-snapshot bootstrap (`SNAPSHOT_RESTORE` /
+`BASEURL` / `COSIGN_PUBKEY` / `ANCHORS`) — a fresh `sovr-1` node must restore a
+snapshot. Without your own sentries yet, point `--persistent-peers` at the
+public persistent peers from [`mainnet/joining.md`](../mainnet/joining.md) §4.
+
+**Air-gapped / offline:** pass `--from-dir DIR` with the release assets
+(`sovrd-<version>-linux-amd64-musl`, `restore-snapshot.sh`, `checksums.txt`,
+`genesis.json`, `genesis.sha256`) instead of downloading.
+
+**Integrity:** the assets are verified against the release's `checksums.txt`
+(HTTPS + sha256); there is **no signature** on that manifest yet — cosign
+signing the published release assets is tracked in
+[#453](https://github.com/parler-tech/sbn/issues/453).
 
 ## Layout
 
 ```
-/usr/local/bin/sovrd                        # symlink -> sovrd-linux-amd64-musl
-/usr/local/bin/sovrd-linux-amd64-musl       # static musl binary
-/usr/local/bin/entrypoint.sh                # container supervisor (shared)
-/usr/local/bin/verify-release-bundle.sh
-/etc/sovr/release/                          # staged release bundle (genesis, checksums, launch.env, seeds)
-/etc/conf.d/sovrd                           # node config (entrypoint env vars)
-/etc/init.d/sovrd                           # OpenRC service (supervise-daemon)
-/var/log/sovrd.log                          # service output
-/home/sovr/.sovr                            # node home: config, data, keys
+/usr/local/bin/sovrd                # static musl binary (from the release)
+/usr/local/bin/restore-snapshot.sh  # snapshot bootstrap (idempotent, fail-closed)
+/usr/local/bin/cosign               # fetched on first restore if absent
+/etc/conf.d/sovrd                   # service + snapshot-bootstrap env (OpenRC)
+/etc/init.d/sovrd                   # OpenRC service (supervise-daemon)
+/var/log/sovrd.log                  # service output
+/home/sovr/.sovr                    # node home: config.toml/app.toml, data, keys
 ```
+
+The node's own configuration is `config.toml` / `app.toml` under
+`/home/sovr/.sovr/config` — the installer seeds peering, listeners, gas and
+pruning; edit those files directly for anything else.
 
 ## Upgrades
 
-At the coordinated halt, stop the supervised process, install the new bundle,
-then start it again:
+At the coordinated halt, stop the node, install the new release, then start it:
 
 ```sh
 rc-service sovrd stop
-alpine/install.sh --bundle ./vNEXT --release-pubkey ./release-captain.asc
+alpine/install.sh --version vNEXT
 rc-service sovrd start
 ```
 
-Stopping first avoids replacing a live binary/`entrypoint.sh` while
-`supervise-daemon` can respawn (`chain-upgrades.md` §3.1). `install.sh` also
-stops a running service before replacing files and restarts it afterwards, but
-the coordinated stop/start above is the procedure to follow. The entrypoint
-re-verifies the new binary against the new bundle's `checksums.txt` on every
-start. For fleet-wide halt timing, see
+Stopping first avoids replacing a live binary while `supervise-daemon` can
+respawn (`chain-upgrades.md` §3.1). For fleet-wide halt timing, see
 [`mainnet-runbook/chain-upgrades.md`](../mainnet-runbook/chain-upgrades.md).
