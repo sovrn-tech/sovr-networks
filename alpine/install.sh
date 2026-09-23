@@ -394,7 +394,7 @@ verify_manifest_signature
 # entrypoint.sh / verify-release-bundle.sh are installed once and never
 # re-verified later, so a stripped-checksum supervisor must not slip through.
 # Optional files are checked when present (their absence is legitimate).
-BUNDLE_FILES_REQUIRED="genesis.json launch.env entrypoint.sh verify-release-bundle.sh $MUSL_BIN"
+BUNDLE_FILES_REQUIRED="genesis.json launch.env entrypoint.sh restore-snapshot.sh verify-release-bundle.sh $MUSL_BIN"
 BUNDLE_FILES_OPTIONAL="seeds.txt addrbook.json"
 
 bundle_checksum_for() {
@@ -458,6 +458,7 @@ log "installing $MUSL_BIN -> /usr/local/bin/sovrd"
 install_file_atomic "$BUNDLE/$MUSL_BIN" "/usr/local/bin/$MUSL_BIN" 0755
 ln -sf "/usr/local/bin/$MUSL_BIN" /usr/local/bin/sovrd
 install_file_atomic "$BUNDLE/entrypoint.sh" /usr/local/bin/entrypoint.sh 0755
+install_file_atomic "$BUNDLE/restore-snapshot.sh" /usr/local/bin/restore-snapshot.sh 0755
 install_file_atomic "$BUNDLE/verify-release-bundle.sh" /usr/local/bin/verify-release-bundle.sh 0755
 
 # ---------------------------------------------------------------
@@ -465,7 +466,7 @@ install_file_atomic "$BUNDLE/verify-release-bundle.sh" /usr/local/bin/verify-rel
 # ---------------------------------------------------------------
 log "staging release bundle -> $RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
-for f in genesis.json checksums.txt launch.env entrypoint.sh verify-release-bundle.sh; do
+for f in genesis.json checksums.txt launch.env entrypoint.sh restore-snapshot.sh verify-release-bundle.sh; do
 	cp "$BUNDLE/$f" "$RELEASE_DIR/$f"
 done
 # Mirror the optional files *exactly*: a stale seeds.txt / addrbook.json left
@@ -479,7 +480,7 @@ for f in seeds.txt addrbook.json; do
 	fi
 done
 chmod 0644 "$RELEASE_DIR"/* 2>/dev/null || true
-chmod 0755 "$RELEASE_DIR/entrypoint.sh" "$RELEASE_DIR/verify-release-bundle.sh" 2>/dev/null || true
+chmod 0755 "$RELEASE_DIR/entrypoint.sh" "$RELEASE_DIR/restore-snapshot.sh" "$RELEASE_DIR/verify-release-bundle.sh" 2>/dev/null || true
 
 # ---------------------------------------------------------------
 # 6. Config (never clobber an edited file)
