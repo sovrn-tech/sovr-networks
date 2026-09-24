@@ -4,6 +4,19 @@ All notable changes to the published network metadata in this repository are
 recorded here. Dates are UTC. This repository is updated on every chain release,
 on IBC route establishment, and on any change to a published value.
 
+## 2026-09-21 — Node software release v0.27.3 (non-consensus)
+
+- Published the node software release [v0.27.3](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.3)
+  (`sovrd` linux/amd64 + `libwasmvm.x86_64.so` + checksums) and the container image
+  `ghcr.io/sovrn-tech/sovrd:v0.27.3` (`sha256:141aeb194773448727ee407687a072add600bfee03d6657667fc42bbd09b0f4d`)
+  — both extracted from the exact digest the mainnet fleet runs. **No on-chain upgrade** — this
+  release only fixes a `gov` query codec failure (proposal 12's retired `x/bridge` `MsgUpdateParams`
+  failed `ListProposals` decode on the API/gRPC-gateway path) and a `txquery` pagination
+  undercount; no state-machine, keeper, or handler change. v0.27.2 was published but never
+  announced — an issue was found during its release — and this release supersedes it. sovrd sha256
+  `516ec1e2e442d356cec7efc430843f95bddd6e98311cade5c310da4cf3eabdde`, libwasmvm sha256
+  `1da45df75aa3e97f0635e3b4c9236d551fbf7b696af321462e43fa05726cffe9`.
+
 ## 2026-09-16 — Node software release v0.27.1 (v0.27.0-combined upgrade)
 
 - Published the node software release [v0.27.1](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.1)

@@ -6,7 +6,7 @@ smart contracts). SOVR is the sole unit of account of the Sovren Layer 1:
 staking, governance, gas, and service payments. The base denomination is
 `usovr` (1 SOVR = 1,000,000 usovr).
 
-*Last verified against the live networks: 2026-09-16 (release v0.27.1).*
+*Last verified against the live networks: 2026-09-21 (release v0.27.3).*
 
 ## At a glance
 
@@ -112,6 +112,8 @@ mainnet/             sovr-1 (mainnet)
   joining.md         seeds, persistent peers, endpoints, node software status
   ibc.md             canonical IBC route record (Osmosis) — live route: ids, denom, escrow
 testnet/             test-sovr-1 (public testnet) — same shape as mainnet/
+alpine/              native Alpine/OpenRC node install (install.sh, OpenRC unit, conf.d template)
+deploy/validator/    docker-compose validator method (become-a-validator.md, configure.sh, compose file)
 ```
 
 ## Verify the genesis against the live network

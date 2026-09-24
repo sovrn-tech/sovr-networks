@@ -75,11 +75,11 @@ floor applies normally. Both values are governance-tunable; read them live:
 curl -s https://api.sovrchain.net/sovr/globalfee/v1/params | jq .params
 ```
 
-## Software versions (release v0.27.1)
+## Software versions (release v0.27.3)
 
 | Component | Version |
 |---|---|
-| Application | v0.27.1 |
+| Application | v0.27.3 |
 | Cosmos SDK | v0.53.8 |
 | CometBFT | v0.38.23 |
 | ibc-go | v10.5.0 |
@@ -115,7 +115,7 @@ shasum -a 256 -c genesis.sha256
 ---
 
 *Source note: values verified by the Sovren team against the live network and
-the v0.27.1 release manifest, 2026-09-16.*
+the v0.27.3 release manifest, 2026-09-21.*
 
 ## Governance
 
