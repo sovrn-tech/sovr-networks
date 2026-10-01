@@ -77,8 +77,11 @@ public persistent peers from [`mainnet/joining.md`](../mainnet/joining.md) §4.
 `genesis.json`, `genesis.sha256`) instead of downloading.
 
 **Integrity:** the assets are verified against the release's `checksums.txt`
-(HTTPS + sha256); there is **no signature** on that manifest yet — cosign
-signing the published release assets is tracked in
+(HTTPS + sha256); there is **no signature** on that manifest yet. Sovren's
+release signing key is published (`release-signing-key.asc` + `SECURITY.md`
+"Release signing key" in this repository); signing these release assets with
+it and pinning the fingerprint in the installer is tracked in
+[#496](https://github.com/parler-tech/sbn/issues/496), cosign signing in
 [#453](https://github.com/parler-tech/sbn/issues/453).
 
 ## Layout
