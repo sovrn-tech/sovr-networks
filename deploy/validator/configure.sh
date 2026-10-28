@@ -137,9 +137,9 @@ printf 'CHAIN_ID=%s\n' "$(get_kv CHAIN_ID)" >release/launch.env
 ( cd release && { command -v sha256sum >/dev/null 2>&1 && sha256sum launch.env || shasum -a 256 launch.env; } >checksums.txt )
 echo "  release/launch.env + checksums.txt created"
 
-# --- 5b. size memory to this box's RAM (prevents OOM -> jail + slash) --------
+# --- 5b. size memory to this box's RAM (prevents OOM kills) -----------------
 # GOMEMLIMIT must fit physical RAM or Go grows past it and the kernel OOM-kills
-# sovrd; on mainnet's tight downtime window that jails and slashes you.
+# sovrd. Repeated OOM kills cause missed blocks and can lead to a jail.
 say ""
 ram_kb=$(awk '/^MemTotal:/{print $2; exit}' /proc/meminfo 2>/dev/null || echo 0)
 if [ "${ram_kb:-0}" -gt 0 ]; then
@@ -150,7 +150,7 @@ if [ "${ram_kb:-0}" -gt 0 ]; then
 	sw_kb=$(awk '/^SwapTotal:/{print $2; exit}' /proc/meminfo 2>/dev/null || echo 0)
 	if [ "$ram_mib" -lt 4096 ]; then
 		warn "  < 4 GiB RAM (below the recommended minimum) — a validator is memory-tight"
-		warn "  here; an OOM kill on mainnet jails+slashes you. Add swap and/or resize:"
+		warn "  here; repeated OOM kills cause missed blocks. Add swap and/or resize:"
 		warn "    sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile \\"
 		warn "      && sudo mkswap /swapfile && sudo swapon /swapfile"
 	elif [ "${sw_kb:-0}" -eq 0 ]; then

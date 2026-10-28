@@ -29,6 +29,43 @@ version/height, reproduction steps or a proof of concept, and the potential
 impact. Please give us a reasonable window to remediate before any public
 disclosure (see below).
 
+## Release signing key
+
+Sovren signs release manifests with a dedicated **release signing key**, separate
+from the security contact key above:
+
+- **PGP fingerprint:** `A924 55E6 480F F4F3 3E03  86B8 A77A 79C7 529A 47E7`
+- **Key ID:** `0xA77A79C7529A47E7` · **User ID:** `Sovren Release Captain <releases@sovrentech.io>`
+- **Algorithm:** ed25519, signing only (no encryption subkey) · **Created:** 2026-10-01 · **Expires:** 2028-09-30
+
+The key is published in this repository as
+[`release-signing-key.asc`](release-signing-key.asc). Import it and **verify the
+fingerprint above matches** before trusting any signature:
+
+```sh
+gpg --import release-signing-key.asc
+gpg --fingerprint releases@sovrentech.io   # must match the fingerprint above
+```
+
+What it signs: the `checksums.txt.asc` detached signature shipped in Sovren
+release bundles next to `checksums.txt`. Verify the signature first, then the
+artifacts against the manifest:
+
+```sh
+gpg --verify checksums.txt.asc checksums.txt   # "Good signature from Sovren Release Captain"
+sha256sum -c checksums.txt
+```
+
+A signature from any other key, an expired key, or a fingerprint that does not
+match this page is not a Sovren release — treat it as a report-worthy event.
+The node-software releases on this repository's releases page currently ship
+`checksums.txt` without a detached signature; signing them with this key is
+planned and will be announced in the [CHANGELOG](CHANGELOG.md).
+
+Key rotation (on expiry or compromise) is announced here and in the CHANGELOG
+with the new fingerprint; a revocation certificate for this key is held
+offline. The security contact key above does **not** sign releases.
+
 ## Scope
 
 In scope:

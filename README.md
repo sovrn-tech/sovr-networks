@@ -6,7 +6,7 @@ smart contracts). SOVR is the sole unit of account of the Sovren Layer 1:
 staking, governance, gas, and service payments. The base denomination is
 `usovr` (1 SOVR = 1,000,000 usovr).
 
-*Last verified against the live networks: 2026-09-21 (release v0.27.3).*
+*Last verified against the live networks: 2026-10-28 (release v0.27.4).*
 
 ## At a glance
 
@@ -147,7 +147,10 @@ Node binaries and container images are published on this repository's
 `ghcr.io/sovrn-tech/sovrd`. `mainnet/joining.md` carries the current release
 references and the container image digest to pin against. Artifacts are
 extracted from the exact image digest the mainnet fleet runs, so provenance is
-independently verifiable (instructions in the release notes).
+independently verifiable (instructions in the release notes). Release manifests
+that carry a detached `checksums.txt.asc` signature verify against Sovren's
+release signing key — fingerprint and import instructions in
+[SECURITY.md](./SECURITY.md#release-signing-key).
 
 ## Update cadence
 

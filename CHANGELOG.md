@@ -4,6 +4,51 @@ All notable changes to the published network metadata in this repository are
 recorded here. Dates are UTC. This repository is updated on every chain release,
 on IBC route establishment, and on any change to a published value.
 
+## 2026-10-27 — Node software release v0.27.4 (consensus: proposal 16 rollback)
+
+- Published the node software release [v0.27.4](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.4)
+  (`sovrd` linux/amd64 + `libwasmvm.x86_64.so` + checksums) and the container image
+  `ghcr.io/sovrn-tech/sovrd:v0.27.4` (index `sha256:b7490a32529bae1b164ddc600ed454ff3cb210dab03d349cdf1e95d827c6b756`,
+  cosign-signed; linux/amd64 child `sha256:b5009d664ca5e45b98fa056cf13ba1b3a871ada9048a20881fc9841b7a15d67a`)
+  — both extracted from the exact digest the mainnet fleet runs. **Consensus release — all
+  validators must run it to restart `sovr-1`.** Gov proposal 16 changed the emission parameters
+  and replaced the four emission sink addresses. Block 2633374 then emitted the full
+  `protocol_emissions` bucket to the new sinks, and `sovr-1` halted at block 2633375.
+- **Fork height 2633375. This is not a governance upgrade.** The chain is halted, so governance
+  cannot schedule a plan. The v0.27.4 binary schedules the plan itself, on `sovr-1` at height
+  2633375 only. Cosmovisor does not switch binaries for this fork. Replace the binary manually.
+  v0.27.4 replays blocks at or below height 2633374 without change. See
+  [mainnet/joining.md](mainnet/joining.md#fork-at-height-2633375-v0274-not-a-governance-upgrade).
+- At height 2633375 the `v0.27.4-emission-rollback` handler returns the emitted SOVR to `latent`
+  and `protocol_emissions`, rolls back the block 2633374 mint counters, and restores the 13
+  parameters that proposal 16 changed. Any pre-state mismatch aborts the block.
+- From height 2633375, transactions signed or fee-paid by the proposal 16 submitter or sink
+  addresses are rejected, and sends out of these addresses are rejected (except the clawback to
+  the `x/supply` module account). Incoming transfers stay allowed. The lock has no end height. A
+  later upgrade removes it.
+- The handler raises the gov floors: `voting_period` 48h, `expedited_voting_period` 12h,
+  `quorum` 0.5, `min_deposit` 1,000 SOVR, `expedited_min_deposit` 5,000 SOVR, and
+  `min_initial_deposit_ratio` 0.5. It never lowers a higher value. See
+  [mainnet/chain-params.md](mainnet/chain-params.md#governance).
+- Before restart, check the applied height on the node RPC:
+  `curl -s localhost:26657/abci_info | jq -r .result.response.last_block_height` must print
+  `2633374`. (`/status` can show 2633374 or 2633375, because the block store can already hold
+  block 2633375.) Then stop the node and replace the binary. To recover
+  from pre-rollback state, use a snapshot at or below height 2633374. A later snapshot is usable
+  only if it records this rollback as applied. Without that record, v0.27.4 stops with an error
+  above height 2633375.
+- sovrd sha256 `00f0e6705be471ec57d23fa9db395a5525be1830445f52620fb728f82c6bbf6c`, libwasmvm
+  sha256 `1da45df75aa3e97f0635e3b4c9236d551fbf7b696af321462e43fa05726cffe9` (unchanged).
+
+## 2026-10-01 — Release signing key published
+
+- Published Sovren's **release signing key** as [`release-signing-key.asc`](release-signing-key.asc):
+  fingerprint `A924 55E6 480F F4F3 3E03  86B8 A77A 79C7 529A 47E7`, `Sovren Release Captain
+  <releases@sovrentech.io>`, ed25519 signing-only, valid 2026-10-01 → 2028-09-30. It signs the
+  `checksums.txt.asc` detached signature in Sovren release bundles; verification steps and the
+  rotation policy are in [SECURITY.md](SECURITY.md#release-signing-key). The security contact key
+  is unchanged and does not sign releases.
+
 ## 2026-09-21 — Node software release v0.27.3 (non-consensus)
 
 - Published the node software release [v0.27.3](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.3)

@@ -318,13 +318,12 @@ gossip with. (Opening inbound 26656 is not required for this.)
 
 ## 9. Operations
 
-- **Downtime & unjail — mainnet is unforgiving.** Live `sovr-1` slashing params
-  (verify with `curl -s https://api.sovrchain.net/cosmos/slashing/v1beta1/params`):
-  `signed_blocks_window=100`, `min_signed_per_window=0.5` — so you're jailed if you
-  miss **more than 50 of any 100 blocks (~5 minutes offline** at ~6s/block).
-  Downtime slash is **1%** of stake and the jail lasts `600s` (10 min). This means
-  **even a short outage jails you** — treat uptime seriously (adequate RAM, alerts
-  on missed blocks). After a jailing, once the node is healthy and synced:
+- **Downtime & unjail.** Since gov proposal 15 (2026-10-06), `sovr-1` jails a
+  validator after about **16 hours offline**, with a small downtime slash. For the
+  exact values, the grace period and the query command, see
+  [Chain Parameters](../../docs/chain-parameters.md#slashing-xslashing). Treat uptime
+  seriously (adequate RAM, alerts on missed blocks). After a jailing, once the node
+  is healthy and synced:
   ```sh
   sovrd tx slashing unjail --from <operator-name> --chain-id sovr-1 \
     --keyring-backend file --gas auto --gas-adjustment 1.3 --gas-prices 0.001usovr

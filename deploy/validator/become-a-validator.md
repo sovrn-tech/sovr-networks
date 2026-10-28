@@ -156,13 +156,12 @@ your **outbound** path to the seeds is blocked. Add reliable `persistent_peers`
 
 ## 5. Operations
 
-- **Downtime & unjail — mainnet is unforgiving.** Live `sovr-1` params
-  (`curl -s https://api.sovrchain.net/cosmos/slashing/v1beta1/params`):
-  `signed_blocks_window=100`, `min_signed_per_window=0.5` — you're jailed if you
-  miss **more than 50 of any 100 blocks (~5 minutes offline** at ~6s/block).
-  Downtime slash is **1%**; the jail lasts `600s` (10 min). **Even a short outage
-  jails you** — size RAM adequately and alert on missed blocks. After a jailing,
-  once the node is healthy and synced:
+- **Downtime & unjail.** Since gov proposal 15 (2026-10-06), `sovr-1` jails a
+  validator after about **16 hours offline**, with a small downtime slash. A short
+  outage does not jail you, but alerts on missed blocks still matter. For the exact
+  values, the grace period and the query command, see
+  [Chain Parameters](../../docs/chain-parameters.md#slashing-xslashing). After a
+  jailing, once the node is healthy and synced:
   ```sh
   sovrd tx slashing unjail --from <operator-name> --chain-id sovr-1 \
     --keyring-backend file --node https://rpc.sovrchain.net:443 \

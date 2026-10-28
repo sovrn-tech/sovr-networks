@@ -75,11 +75,11 @@ floor applies normally. Both values are governance-tunable; read them live:
 curl -s https://api.sovrchain.net/sovr/globalfee/v1/params | jq .params
 ```
 
-## Software versions (release v0.27.3)
+## Software versions (release v0.27.4)
 
 | Component | Version |
 |---|---|
-| Application | v0.27.3 |
+| Application | v0.27.4 |
 | Cosmos SDK | v0.53.8 |
 | CometBFT | v0.38.23 |
 | ibc-go | v10.5.0 |
@@ -115,39 +115,42 @@ shasum -a 256 -c genesis.sha256
 ---
 
 *Source note: values verified by the Sovren team against the live network and
-the v0.27.3 release manifest, 2026-09-21.*
+the v0.27.4 release manifest, 2026-10-28.*
 
 ## Governance
 
-Live values, read from the chain on 2026-08-17. **Governance parameters are changed by governance**
-— always re-read them before relying on them:
+Values effective from height 2633375 (v0.27.4). **Governance parameters are changed by governance**,
+and also by a halt-recovery release: the v0.27.4 rollback handler raised the floors below. Always
+re-read them before relying on them:
 
-| Parameter | Live value | Endpoint |
+| Parameter | Value | Endpoint |
 |---|---|---|
-| `voting_period` | **14400s (4 hours)** | `/cosmos/gov/v1/params/voting` |
-| `expedited_voting_period` | **7200s (2 hours)** | same |
-| `quorum` | 0.334 | same |
+| `voting_period` | **172800s (48 hours)** | `/cosmos/gov/v1/params/voting` |
+| `expedited_voting_period` | **43200s (12 hours)** | same |
+| `quorum` | **0.5** | same |
 | `threshold` (regular) | 0.5 | same |
 | `expedited_threshold` | **0.667** | same |
 | `veto_threshold` | 0.334 | same |
-| `min_deposit` | 10000000 `usovr` (10 SOVR) | same |
-| `expedited_min_deposit` | 50000000 `usovr` (50 SOVR) | same |
+| `min_deposit` | 1000000000 `usovr` (1,000 SOVR) | same |
+| `expedited_min_deposit` | 5000000000 `usovr` (5,000 SOVR) | same |
+| `min_initial_deposit_ratio` | **0.5** — a proposer pays 500 SOVR at submission | same |
 | `max_deposit_period` | 172800s (48 hours) | same |
 | `burn_vote_veto` | `true` — a vetoed proposal's deposit is burned | same |
 
-**Two tracks.** A regular proposal votes for 4 hours and passes at a 0.5 threshold. An **expedited**
-proposal votes for only **2 hours** but must clear a higher **0.667** threshold and post 5× the
-deposit; if it fails to clear that bar it does not simply fail, it converts to a regular proposal
-and continues for the normal period. Both tracks share the 0.334 quorum and 0.334 veto threshold.
+**Two tracks.** A regular proposal votes for 48 hours and passes at a 0.5 threshold. An
+**expedited** proposal votes for **12 hours** but must clear a higher **0.667** threshold and post
+5× the deposit; if it fails to clear that bar it does not simply fail, it converts to a regular
+proposal and continues for the normal period. Both tracks share the 0.5 quorum and 0.334 veto
+threshold.
 
-> **Genesis vs. live.** The launch `genesis.json` records a **regular** `voting_period` of
-> `172800s` (48 hours); the live value is **14400s (4 hours)**, set by governance after launch. Genesis is byte-pinned and
-> is never edited, so the two differ by design — the live value is the operative one. Anything
-> stating a 48-hour voting period is describing genesis, not the running chain.
+> **Floors from v0.27.4.** At height 2633375 the v0.27.4 handler raised `voting_period`,
+> `expedited_voting_period`, `quorum`, `min_deposit`, `expedited_min_deposit` and
+> `min_initial_deposit_ratio` to the values above. It never lowers a value that is already
+> higher. Before that height the values were 4h / 2h voting, 0.334 quorum, and 10 / 50 SOVR
+> deposits. See the [CHANGELOG](../CHANGELOG.md).
 >
-> A 4-hour voting period is short. Integrators who need to react to governance — validators,
-> exchanges pausing deposits around an upgrade — should monitor proposals continuously rather than
-> polling daily.
+> **Genesis vs. live.** The launch `genesis.json` is byte-pinned and is never edited, so its gov
+> values can differ from the live values. The live value is the operative one.
 
 ```sh
 curl -s https://api.sovrchain.net/cosmos/gov/v1/params/voting | jq .params

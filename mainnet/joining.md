@@ -7,11 +7,11 @@ are in [`chain-params.md`](./chain-params.md).
 
 Node software is published on this repository's
 [releases page](https://github.com/sovrn-tech/sovr-networks/releases). The current mainnet release
-is [v0.27.3](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.3):
+is [v0.27.4](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.4):
 
 | Artifact | Notes |
 |---|---|
-| `sovrd-v0.27.3-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
+| `sovrd-v0.27.4-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
 | `libwasmvm.x86_64.so` | **Required** — `sovrd` links against it; install on the library path |
 | `checksums.txt` | SHA-256 of both; verify before running |
 
@@ -19,16 +19,43 @@ Container image (the **same build** — the release binary was extracted from th
 rebuilt):
 
 ```
-ghcr.io/sovrn-tech/sovrd:v0.27.3
-digest: sha256:141aeb194773448727ee407687a072add600bfee03d6657667fc42bbd09b0f4d
+ghcr.io/sovrn-tech/sovrd:v0.27.4
+digest:       sha256:b7490a32529bae1b164ddc600ed454ff3cb210dab03d349cdf1e95d827c6b756
+amd64 child:  sha256:b5009d664ca5e45b98fa056cf13ba1b3a871ada9048a20881fc9841b7a15d67a
 ```
 
 **Pin the digest, not the tag** — it is the exact image every Sovren mainnet node runs, so what you
-execute is byte-identical to what the network validates with.
+execute is byte-identical to what the network validates with. `digest` is the multi-arch index:
+pin it, and verify it with `cosign verify --key cosign.pub ghcr.io/sovrn-tech/sovrd@<digest>`
+([`cosign.pub`](../cosign.pub)). The `amd64 child` line (the linux/amd64 image in the index) is for reference only: it is the image
+the release binary was extracted from, and it carries no signature of its own.
 
 Do not run binaries or images obtained from any other source claiming to be Sovren node software —
 this repository's releases page and the `ghcr.io/sovrn-tech` registry are the only official
 channels.
+
+### Fork at height 2633375 (v0.27.4, not a governance upgrade)
+
+`sovr-1` halted at height 2633375. v0.27.4 forks the chain at that height to roll back gov
+proposal 16 (see [CHANGELOG](../CHANGELOG.md)).
+
+- **This is not a governance `x/upgrade` plan.** The v0.27.4 binary schedules the
+  `v0.27.4-emission-rollback` plan itself, on `sovr-1` at height 2633375 only. A v0.27.3 node does
+  not get an upgrade plan or an `upgrade-info.json` file. Cosmovisor does **not** switch binaries
+  automatically. Replace the binary manually.
+- **Before restart:** on the node RPC, check the applied height:
+
+  ```
+  curl -s localhost:26657/abci_info | jq -r .result.response.last_block_height
+  ```
+
+  It must print `2633374`. `/status` can show 2633374 or 2633375, because the block store can
+  already hold block 2633375. Then stop the node, replace the binary with v0.27.4, and start it.
+- **Height 2633374 and below:** v0.27.4 replays these blocks without change.
+- **Height 2633375 and above:** you must use v0.27.4. A v0.27.3 node cannot apply block 2633375.
+- **Snapshots:** use a snapshot at or below height 2633374. A later snapshot is usable only if
+  it records the rollback as applied. Without that record, v0.27.4 stops with an error above
+  height 2633375.
 
 ## 2. Initialize the node home
 
@@ -104,4 +131,4 @@ https://sovrscan.com/node-health.
 ---
 
 *Source note: peers, endpoints, and checksums verified by the Sovren team
-against the live network and the v0.27.3 release manifest, 2026-09-21.*
+against the live network and the v0.27.4 release manifest, 2026-10-28.*

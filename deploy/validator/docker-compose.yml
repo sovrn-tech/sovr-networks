@@ -51,8 +51,8 @@ services:
       RELEASE_BUNDLE_DIR: /etc/sovr/release
 
       # Go heap soft cap. MUST fit your box's RAM (~75% of it) or Go grows past RAM
-      # and the kernel OOM-kills sovrd → jail + slash on mainnet's tight downtime
-      # window. REQUIRED (no default) so a box is never silently over-committed:
+      # and the kernel OOM-kills sovrd; repeated kills cause missed blocks.
+      # REQUIRED (no default) so a box is never silently over-committed:
       # configure.sh sizes it from detected RAM, or set it per the .env.example
       # table. Keep MEMORY_LIMIT (below) a little above it and ≤ your RAM.
       GOMEMLIMIT: ${GOMEMLIMIT:?set GOMEMLIMIT — run ./configure.sh (auto-sizes from RAM) or set it per the .env.example table}
