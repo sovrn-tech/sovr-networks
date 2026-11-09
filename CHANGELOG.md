@@ -4,6 +4,39 @@ All notable changes to the published network metadata in this repository are
 recorded here. Dates are UTC. This repository is updated on every chain release,
 on IBC route establishment, and on any change to a published value.
 
+## 2026-11-09 — Node software release v0.28.0 (consensus: governance upgrade `v0.28.0-security-hardening` at height 2819382)
+
+- Published the node software release [v0.28.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.28.0)
+  (`sovrd-v0.28.0-linux-amd64-musl` — a statically linked daemon that needs no `libwasmvm` — plus
+  `restore-snapshot.sh` and checksums) and the container image `ghcr.io/sovrn-tech/sovrd:v0.28.0`
+  (index `sha256:210c20c0636d6fb52e2b7633d7e852aca909cb88fee37454b97373d2be135aa1`, cosign-signed;
+  linux/amd64 child `sha256:0ad2e710bd33cf01620129ece5e5c71819c68ba520531e84bff72cfa69e04079`) — the
+  exact digest the mainnet fleet runs. **Consensus release.** Gov proposal 17 scheduled the
+  `v0.28.0-security-hardening` plan at height 2819382; `sovr-1` halted there on 2026-11-09 at
+  20:48 UTC and resumed on v0.28.0 at 20:57 UTC.
+- **A governance upgrade, not a fork.** Cosmovisor switches automatically when the binary is staged
+  under `cosmovisor/upgrades/v0.28.0-security-hardening/bin/sovrd`; manual operators replace the
+  binary after their node logs `UPGRADE "v0.28.0-security-hardening" NEEDED at height: 2819382`.
+  Heights 2633375–2819381 still need v0.27.4. See
+  [mainnet/joining.md](mainnet/joining.md#upgrade-at-height-2819382-v0280-governance-plan-v0280-security-hardening).
+- Security hardening. SOVR↔EVM bridge (`x/evmbridge`): a bank send restriction on the warp escrow
+  and nested-message unwrapping in the ante guard, the policy ISM bound to the canonical route,
+  inbound release amounts bounded, the emergency authority can no longer lift a governance pause,
+  and a new automated pause-only authority parameter (consensus version 1→2). `x/attestation`:
+  the slim-agent signed-report path is closed, `MsgSubmitMerkleBatch` is disabled, and challenges
+  are bounded, target-checked, bonded and pruned. `x/wasmguard`: contract sub-messages count
+  against the quotas. Store reads fail closed on unexpected errors. The bridge stays dormant and
+  fail-closed — no route exists yet.
+- Node licenses: tranches T02–T09 convert from Dutch auction to fixed price (T02 $3,000, T03 $3,500,
+  T04 $4,000, T05 $4,500, T06 $5,000, T07 $5,500, T08 $6,000, T09 $6,500); T01 ($3,000) and the T10
+  company reserve are unchanged (`x/auction` consensus version 2→3). No store additions; no
+  governance parameter changed.
+- Checksums: `sovrd-v0.28.0-linux-amd64-musl` sha256
+  `dad7f46ee8b73b9b7beb58e0f2c9be053a98b8955f035cd43d164a6d412a7e3a`; `restore-snapshot.sh` sha256
+  `45d18caa5ef17f5c7afdd14fd54acafef169ba2d3495a978e74b53253031fc1b`. The glibc `sovrd` inside the
+  image has sha256 `042f620fe66f94d7d0a816442a8df7618605c7691aa0557cbae95ebcc1a2e34b` (the
+  `BINARY_SHA256` value for docker-compose validators).
+
 ## 2026-10-27 — Node software release v0.27.4 (consensus: proposal 16 rollback)
 
 - Published the node software release [v0.27.4](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.4)

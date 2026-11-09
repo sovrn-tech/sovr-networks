@@ -75,16 +75,16 @@ floor applies normally. Both values are governance-tunable; read them live:
 curl -s https://api.sovrchain.net/sovr/globalfee/v1/params | jq .params
 ```
 
-## Software versions (release v0.27.4)
+## Software versions (release v0.28.0)
 
 | Component | Version |
 |---|---|
-| Application | v0.27.4 |
+| Application | v0.28.0 |
 | Cosmos SDK | v0.53.8 |
 | CometBFT | v0.38.23 |
 | ibc-go | v10.5.0 |
 | CosmWasm (wasmd) | v0.60.7 |
-| Go toolchain | 1.25.14 |
+| Go toolchain | 1.26.10 |
 
 ## Ports (default node configuration)
 
@@ -115,11 +115,11 @@ shasum -a 256 -c genesis.sha256
 ---
 
 *Source note: values verified by the Sovren team against the live network and
-the v0.27.4 release manifest, 2026-10-28.*
+the v0.28.0 release manifest, 2026-11-09.*
 
 ## Governance
 
-Values effective from height 2633375 (v0.27.4). **Governance parameters are changed by governance**,
+Values effective from height 2633375 (v0.27.4); unchanged by the v0.28.0 upgrade at 2819382. **Governance parameters are changed by governance**,
 and also by a halt-recovery release: the v0.27.4 rollback handler raised the floors below. Always
 re-read them before relying on them:
 

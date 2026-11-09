@@ -7,34 +7,64 @@ are in [`chain-params.md`](./chain-params.md).
 
 Node software is published on this repository's
 [releases page](https://github.com/sovrn-tech/sovr-networks/releases). The current mainnet release
-is [v0.27.4](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.27.4):
+is [v0.28.0](https://github.com/sovrn-tech/sovr-networks/releases/tag/v0.28.0):
 
 | Artifact | Notes |
 |---|---|
-| `sovrd-v0.27.4-linux-amd64` | The chain daemon. linux/amd64, glibc ≥ 2.36 |
-| `libwasmvm.x86_64.so` | **Required** — `sovrd` links against it; install on the library path |
+| `sovrd-v0.28.0-linux-amd64-musl` | The chain daemon. linux/amd64, **statically linked** — no shared libraries and no `libwasmvm` to install; runs on glibc and musl (Alpine) hosts alike |
+| `restore-snapshot.sh` | Optional helper that bootstraps a fresh node from a signed archive snapshot |
 | `checksums.txt` | SHA-256 of both; verify before running |
 
-Container image (the **same build** — the release binary was extracted from this image, not
-rebuilt):
+Container image — the build every Sovren mainnet node runs, and the artifact the cosign
+signature covers:
 
 ```
-ghcr.io/sovrn-tech/sovrd:v0.27.4
-digest:       sha256:b7490a32529bae1b164ddc600ed454ff3cb210dab03d349cdf1e95d827c6b756
-amd64 child:  sha256:b5009d664ca5e45b98fa056cf13ba1b3a871ada9048a20881fc9841b7a15d67a
+ghcr.io/sovrn-tech/sovrd:v0.28.0
+digest:       sha256:210c20c0636d6fb52e2b7633d7e852aca909cb88fee37454b97373d2be135aa1
+amd64 child:  sha256:0ad2e710bd33cf01620129ece5e5c71819c68ba520531e84bff72cfa69e04079
 ```
 
 **Pin the digest, not the tag** — it is the exact image every Sovren mainnet node runs, so what you
 execute is byte-identical to what the network validates with. `digest` is the multi-arch index:
 pin it, and verify it with `cosign verify --key cosign.pub ghcr.io/sovrn-tech/sovrd@<digest>`
-([`cosign.pub`](../cosign.pub)). The `amd64 child` line (the linux/amd64 image in the index) is for reference only: it is the image
-the release binary was extracted from, and it carries no signature of its own.
+([`cosign.pub`](../cosign.pub)). The `amd64 child` line (the linux/amd64 image in the index) is for
+reference only and carries no signature of its own.
+
+**The downloadable `sovrd-v0.28.0-linux-amd64-musl` is a separate, statically linked build of the
+same `v0.28.0` source tag — it is not extracted from the container image**, and the glibc `sovrd`
+inside the image has a different checksum. The cosign signature above therefore says nothing about
+the download. Verify it against `checksums.txt` from the same release page (sha256
+`dad7f46ee8b73b9b7beb58e0f2c9be053a98b8955f035cd43d164a6d412a7e3a`) before running it, and prefer
+the signed container where your setup allows.
 
 Do not run binaries or images obtained from any other source claiming to be Sovren node software —
 this repository's releases page and the `ghcr.io/sovrn-tech` registry are the only official
 channels.
 
-### Fork at height 2633375 (v0.27.4, not a governance upgrade)
+### Upgrade at height 2819382 (v0.28.0, governance plan `v0.28.0-security-hardening`)
+
+`sovr-1` halted at height 2819382 on 2026-11-09 (20:48 UTC) under gov proposal 17 and resumed on
+v0.28.0 nine minutes later. Unlike the v0.27.4 fork below, this **is** a governance `x/upgrade`
+plan, so the normal Cosmos SDK upgrade mechanics apply:
+
+- **Cosmovisor switches automatically** when the v0.28.0 binary is staged at
+  `<DAEMON_HOME>/cosmovisor/upgrades/v0.28.0-security-hardening/bin/sovrd` (the exact plan name).
+  The plan carries no binary-download info, so `DAEMON_ALLOW_DOWNLOAD_BINARIES` does nothing —
+  stage the binary yourself.
+- **Manual:** a v0.27.4 node stops at 2819382 with
+  `UPGRADE "v0.28.0-security-hardening" NEEDED at height: 2819382` (and writes
+  `data/upgrade-info.json`). Stop it, replace the binary with v0.28.0, start it. Do **not** start
+  v0.28.0 before your node has reached that height.
+- **Binary ladder when catching up:** heights 2633375–2819381 need v0.27.4; 2819382 and above need
+  v0.28.0. A node syncing from an older height runs v0.27.4 until it halts at 2819382, then switches
+  (cosmovisor does this for you).
+- **Snapshots:** a snapshot taken at or above height 2819382 needs v0.28.0 from the start. A
+  pre-upgrade snapshot at or above 2633375 starts under v0.27.4 and switches at the halt.
+- **What changed:** see the [CHANGELOG](../CHANGELOG.md) entry of 2026-11-09 — security hardening
+  across several modules and the conversion of node-license tranches T02–T09 to fixed price. No
+  governance parameter changed.
+
+#### Fork at height 2633375 (v0.27.4, not a governance upgrade)
 
 `sovr-1` halted at height 2633375. v0.27.4 forks the chain at that height to roll back gov
 proposal 16 (see [CHANGELOG](../CHANGELOG.md)).
@@ -131,4 +161,4 @@ https://sovrscan.com/node-health.
 ---
 
 *Source note: peers, endpoints, and checksums verified by the Sovren team
-against the live network and the v0.27.4 release manifest, 2026-10-28.*
+against the live network and the v0.28.0 release manifest, 2026-11-09.*
