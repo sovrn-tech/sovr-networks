@@ -16,7 +16,7 @@ services:
   sovr-validator:
     # PUBLIC image, pinned by digest for reproducibility (see README "Get the
     # artifacts" — verify the digest against the official sovr-networks release).
-    image: ${SOVR_NODE_IMAGE:?set SOVR_NODE_IMAGE (e.g. ghcr.io/sovrn-tech/sovrd:v0.27.1@sha256:...)}
+    image: ${SOVR_NODE_IMAGE:?set SOVR_NODE_IMAGE (e.g. ghcr.io/sovrn-tech/sovrd:v0.28.0@sha256:...)}
     container_name: sovr-validator
     restart: unless-stopped
     stop_grace_period: 60s
